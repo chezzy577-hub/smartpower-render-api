@@ -18,14 +18,14 @@ if (empty($mac)) {
 
 try {
     $pdo->exec("
-        CREATE TABLE IF NOT EXISTS esp32_devices (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            mac_address VARCHAR(20) NOT NULL UNIQUE,
-            user_id INT NOT NULL,
-            device_name VARCHAR(80) DEFAULT 'SmartPower ESP32',
-            registered_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-    ");
+    CREATE TABLE IF NOT EXISTS esp32_devices (
+        id SERIAL PRIMARY KEY,
+        mac_address VARCHAR(20) NOT NULL UNIQUE,
+        user_id INTEGER NOT NULL,
+        device_name VARCHAR(80) DEFAULT 'SmartPower ESP32',
+        registered_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+");
 
     $stmt = $pdo->prepare("
         SELECT user_id, device_name
