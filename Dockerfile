@@ -1,7 +1,7 @@
 FROM php:8.2-fpm
 
-RUN apt-get update && apt-get install -y nginx \
-    && docker-php-ext-install pdo pdo_mysql \
+RUN apt-get update && apt-get install -y nginx libpq-dev \
+    && docker-php-ext-install pdo pdo_pgsql \
     && apt-get clean
 
 WORKDIR /var/www/html
