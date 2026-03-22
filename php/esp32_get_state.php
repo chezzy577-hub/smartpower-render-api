@@ -17,6 +17,39 @@ if ($userId <= 0) {
 }
 
 try {
+    $pdo->exec("
+        CREATE TABLE IF NOT EXISTS user_settings (
+            id SERIAL PRIMARY KEY,
+            user_id INTEGER NOT NULL UNIQUE,
+            rate_per_kwh NUMERIC(10,2) DEFAULT 14.50,
+            monthly_threshold NUMERIC(12,3) DEFAULT 0
+        )
+    ");
+
+    $pdo->exec("
+        CREATE TABLE IF NOT EXISTS user_load_settings (
+            id SERIAL PRIMARY KEY,
+            user_id INTEGER NOT NULL UNIQUE,
+            light_enabled INTEGER DEFAULT 1,
+            heavy_enabled INTEGER DEFAULT 1,
+            override_manual INTEGER DEFAULT 0,
+            threshold_exceeded INTEGER DEFAULT 0,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ");
+
+    $pdo->prepare("
+        INSERT INTO user_settings (user_id, rate_per_kwh, monthly_threshold)
+        VALUES (:uid, 14.50, 100)
+        ON CONFLICT (user_id) DO NOTHING
+    ")->execute(['uid' => $userId]);
+
+    $pdo->prepare("
+        INSERT INTO user_load_settings (user_id, light_enabled, heavy_enabled, override_manual, threshold_exceeded)
+        VALUES (:uid, 1, 1, 0, 0)
+        ON CONFLICT (user_id) DO NOTHING
+    ")->execute(['uid' => $userId]);
+
     $stmt = $pdo->prepare("
         SELECT light_enabled, heavy_enabled, override_manual, threshold_exceeded
         FROM user_load_settings
@@ -26,23 +59,10 @@ try {
     $stmt->execute(['uid' => $userId]);
     $row = $stmt->fetch();
 
-    if (!$row) {
-        echo json_encode([
-            'ok' => true,
-            'light_on' => 1,
-            'heavy_on' => 1,
-            'override_manual' => 0,
-            'threshold_exceeded' => 0,
-            'rate_per_kwh' => 14.50,
-            'threshold' => 0
-        ]);
-        exit;
-    }
-
-    $lightOn = (int)$row['light_enabled'];
-    $heavyOn = (int)$row['heavy_enabled'];
-    $overrideManual = (int)$row['override_manual'];
-    $thresholdExceeded = (int)$row['threshold_exceeded'];
+    $lightOn = (int)($row['light_enabled'] ?? 1);
+    $heavyOn = (int)($row['heavy_enabled'] ?? 1);
+    $overrideManual = (int)($row['override_manual'] ?? 0);
+    $thresholdExceeded = (int)($row['threshold_exceeded'] ?? 0);
 
     if ($overrideManual === 0 && $thresholdExceeded === 1) {
         $lightOn = 1;
