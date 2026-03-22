@@ -37,6 +37,36 @@ $currentTotal   = $lightCurrent + $heavyCurrent;
 $currentPowerKw = ($voltage * $currentTotal) / 1000.0;
 
 try {
+    $pdo->exec("
+        CREATE TABLE IF NOT EXISTS readings (
+            id SERIAL PRIMARY KEY,
+            user_id INTEGER NOT NULL,
+            voltage NUMERIC(10,2) DEFAULT 0,
+            current NUMERIC(10,2) DEFAULT 0,
+            light_current NUMERIC(10,2) DEFAULT 0,
+            heavy_current NUMERIC(10,2) DEFAULT 0,
+            kwh NUMERIC(12,6) DEFAULT 0,
+            light_on INTEGER DEFAULT 1,
+            heavy_on INTEGER DEFAULT 0,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ");
+
+    $pdo->exec("
+        CREATE TABLE IF NOT EXISTS user_settings (
+            id SERIAL PRIMARY KEY,
+            user_id INTEGER NOT NULL UNIQUE,
+            rate_per_kwh NUMERIC(10,2) DEFAULT 14.50,
+            monthly_threshold NUMERIC(12,3) DEFAULT 0
+        )
+    ");
+
+    $pdo->prepare("
+        INSERT INTO user_settings (user_id, rate_per_kwh, monthly_threshold)
+        VALUES (:uid, 14.50, 100)
+        ON CONFLICT (user_id) DO NOTHING
+    ")->execute(['uid' => $userId]);
+
     $stmt = $pdo->prepare("
         INSERT INTO readings
         (user_id, voltage, current, light_current, heavy_current, kwh, light_on, heavy_on, created_at)
@@ -56,9 +86,6 @@ try {
 
     $rateKwh = 14.50;
     $threshold = 0.0;
-    $thresholdExceeded = 0;
-    $finalLight = $lightOn;
-    $finalHeavy = $heavyOn;
 
     $rs = $pdo->prepare("
         SELECT rate_per_kwh, monthly_threshold
@@ -83,9 +110,9 @@ try {
         'heavy_current'      => $heavyCurrent,
         'current_power'      => round($currentPowerKw, 4),
         'delta_kwh'          => $deltaKwh,
-        'threshold_exceeded' => $thresholdExceeded,
-        'light_on'           => $finalLight,
-        'heavy_on'           => $finalHeavy,
+        'threshold_exceeded' => 0,
+        'light_on'           => $lightOn,
+        'heavy_on'           => $heavyOn,
         'rate_per_kwh'       => $rateKwh,
         'threshold'          => $threshold
     ]);
