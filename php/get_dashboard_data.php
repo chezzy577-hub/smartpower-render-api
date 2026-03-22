@@ -91,8 +91,6 @@ try {
         'kwh' => (float)($reading['kwh'] ?? 0),
         'light_on' => (int)($load['light_enabled'] ?? 1),
         'heavy_on' => (int)($load['heavy_enabled'] ?? 1),
-        'override_manual' => (int)($load['override_manual'] ?? 0),
-        'threshold_exceeded' => (int)($load['threshold_exceeded'] ?? 0),
         'rate_per_kwh' => (float)($settings['rate_per_kwh'] ?? 14.50),
         'monthly_threshold' => (float)($settings['monthly_threshold'] ?? 100),
         'updated_at' => $reading['created_at'] ?? null
